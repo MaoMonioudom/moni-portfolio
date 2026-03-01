@@ -13,16 +13,41 @@ const getFeatures = async (req, res) => {
   }
 };
 
+// @desc    Get single feature
+// @route   GET /api/features/:id
+// @access  Public
+const getFeature = async (req, res) => {
+    try {
+        const feature = await Feature.findById(req.params.id).populate('serviceId', 'title');
+        if (!feature) {
+            res.status(404);
+            throw new Error('Feature not found');
+        }
+        res.status(200).json(feature);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Create a feature
 // @route   POST /api/features
 // @access  Private (Admin only)
 const createFeature = async (req, res) => {
   try {
-    const { title, description, serviceId } = req.body;
+    const { title, description, serviceId, detailDescription } = req.body;
     let imageUrl = req.body.imageUrl;
+    let moreImages = [];
 
-    if (req.file) {
-      imageUrl = req.file.path;
+    // Handle primary image
+    if (req.files && req.files['image']) {
+      imageUrl = req.files['image'][0].path;
+    }
+
+    // Handle additional images
+    if (req.files && req.files['moreImages']) {
+      req.files['moreImages'].forEach((file) => {
+        moreImages.push(file.path);
+      });
     }
 
     if (!title || !description) {
@@ -35,6 +60,8 @@ const createFeature = async (req, res) => {
       description,
       imageUrl,
       serviceId: serviceId || null,
+      detailDescription: detailDescription || '',
+      moreImages: moreImages,
     });
     res.status(201).json(feature);
   } catch (error) {
@@ -55,18 +82,31 @@ const updateFeature = async (req, res) => {
     }
 
     let imageUrl = req.body.imageUrl || feature.imageUrl;
+    let moreImages = feature.moreImages || [];
 
-    if (req.file) {
+    // Update primary image
+    if (req.files && req.files['image']) {
       if (feature.imageUrl) {
         // Delete old image
         await deleteImage(feature.imageUrl);
       }
-      imageUrl = req.file.path;
+      imageUrl = req.files['image'][0].path;
     }
+
+    // Add new additional images
+    if (req.files && req.files['moreImages']) {
+      req.files['moreImages'].forEach((file) => {
+        moreImages.push(file.path);
+      });
+    }
+
+    // If update requests specifically clears or replaces (complex logic, for now assume append/replace per request)
+    // You might want a way to remove specific images later.
 
     const updatedData = {
       ...req.body,
       imageUrl,
+      moreImages,
     };
 
     const updatedFeature = await Feature.findByIdAndUpdate(
@@ -107,6 +147,7 @@ const deleteFeature = async (req, res) => {
 
 module.exports = {
   getFeatures,
+  getFeature,
   createFeature,
   updateFeature,
   deleteFeature,

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getFeatures,
+  getFeature,
   createFeature,
   updateFeature,
   deleteFeature,
@@ -9,8 +10,23 @@ const {
 const { upload } = require('../config/cloudinary');
 
 router.get('/', getFeatures);
-router.post('/', upload.single('image'), createFeature);
-router.put('/:id', upload.single('image'), updateFeature);
+router.get('/:id', getFeature);
+router.post(
+  '/',
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'moreImages', maxCount: 10 },
+  ]),
+  createFeature
+);
+router.put(
+  '/:id',
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'moreImages', maxCount: 10 },
+  ]),
+  updateFeature
+);
 router.delete('/:id', deleteFeature);
 
 module.exports = router;

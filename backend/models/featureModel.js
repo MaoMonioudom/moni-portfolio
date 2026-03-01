@@ -19,6 +19,13 @@ const featureSchema = mongoose.Schema(
       ref: 'Service',
       required: false,
     },
+    detailDescription: {
+      type: String, // Extended description for the detail page
+      required: false,
+    },
+    moreImages: [{
+      type: String, // Array of URLs for additional images
+    }],
   },
   {
     timestamps: true,
